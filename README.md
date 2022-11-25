@@ -28,11 +28,17 @@ $H_{\mathrm{eff}}|_{\epsilon=\epsilon_{\mathrm{min}}}$
 All magnetic fields are used in units of magnetic induction (tesla), that is, $\mu_0 H$.
 
 You can do only calculations or also plot the results of energy density in polar or rectilinear projection (for negative values rectilinear projection is preferred). 
+
 ![polar example](/assets/test_plots/ani20221125_00_test_eden_polar.png)
+
 ![rectilinear example](/assets/test_plots/ani20221125_00_test_eden_rect.png)
+
 You can also plot the effective field and its components. Here the color signalizes the angle $\varphi$ continuously changing from $0$ to $2\pi$.
+
 ![heff example](/assets/test_plots/ani20221125_00_test_heff.png)
+
 If you are interested, you can also plot the magnetic induction but, in case of weak fields, this plot is quite useless.
+
 ![beff example](/assets/test_plots/ani20221125_00_test_beff.png)
 
 For complete examples see `main()` functions in `epsmin_heff.py` and `cylinder_test.py`.
