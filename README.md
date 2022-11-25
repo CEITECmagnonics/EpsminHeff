@@ -3,11 +3,16 @@ Computation of energy density minima and effective field values.
 
 ## Requirements
 I'm not sure about all dependencies, but here are package versions I used:
+
 Python 3.10.8
+
 Numpy 1.23.5
+
 Matplotlib 3.6.2
+
 Scipy 1.9.3
-myfxs (optional, see [MyFxs Package](https://github.com/GiovanniKl/MyFxsPackage)
+
+myfxs (optional, see [MyFxs Package](https://github.com/GiovanniKl/MyFxsPackage))
 
 The Myfxs package turns all fonts into serif fonts. You can omit this package, if you always set the `serif` parameter to `False`. *(Note: This might change in the future.)*
 
