@@ -156,7 +156,7 @@ Class characterizing the process of finding the minima of the energy density $\e
 - `plot_rectilinear(self)` - generates a plot of energy density and its components in rectilinear projection.
 - `plot_polar(self)` - generates a plot of energy density and its components in polar projection. *Note: This plots only positive values of energy! For expected negative values, rectilinear projection is recommended.*
 - `plot_heff(self)` - generates a quiver plot of effective magnetic field and its components. If `fit_angle` is `True`, this also plots effective magnetic field for angle `phi_emin` (angle of magnetization from $x$ axis at energy density minimum).
-- `plot_beff(self)` - generates a quiver plot of effective magnetic induction ${\textbf{B}_{\mathrm{eff}} = \mu_0 (\textbf{H}_{\mathrm{eff}} + \textbf{M})}$ and its components. If `fit_angle` is `True`, also plots effective magnetic induction for angle `phi_emin` (angle of magnetization from $x$ axis at energy density minimum).
+- `plot_beff(self)` - generates a quiver plot of effective magnetic induction $\textbf{B}_{\mathrm{eff}} = \mu_0 (\textbf{H}_{\mathrm{eff}} + \textbf{M})$ and its components. If `fit_angle` is `True`, also plots effective magnetic induction for angle `phi_emin` (angle of magnetization from $x$ axis at energy density minimum).
 - `evaluate(self)` - automatic processiing of the calculation and plotting according to the calculation setup.
 
 
