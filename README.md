@@ -14,32 +14,28 @@ The Myfxs package turns all fonts into serif fonts. You can omit this package, i
 ## Usage
 
 This package calculates energy density $\epsilon$ and effective magnetic field $\textbf{H}_{\mathrm{eff}}$ of a rectangle or a cylinder homogenously magnetized (to saturation) in the $xy$ plane. These are functions of magnetization direction characterized by the angle $\varphi$. You can choose what components you want to include:
-- dipolar (demagnetization) energy density $\epsilon_{\mathrm{dip}}$ and field 
-$\textbf{H}_{\mathrm{dip}}$
-- uniaxial anisotropy energy density $\epsilon_{\mathrm{ani}}$ and field 
-$\textbf{H}_{\mathrm{ani}}$
-- Zeeman energy density $\epsilon_{\mathrm{Zee}}$ and external field 
-$\textbf{H}_{\mathrm{ext}}$
-.
-You can find and plot the total energy density minimum $\epsilon_{\mathrm{min}}$, the corresponding angle $\varphi_0$ and the value of the effective field
-$H_{\mathrm{eff}}|_{\epsilon=\epsilon_{\mathrm{min}}}$
-.
+- dipolar (demagnetization) energy density ${\epsilon_{\mathrm{dip}}}$ and field ${\textbf{H}_{\mathrm{dip}}}$
+- uniaxial anisotropy energy density ${\epsilon_{\mathrm{ani}}}$ and field ${\textbf{H}_{\mathrm{ani}}}$
+- Zeeman energy density ${\epsilon_{\mathrm{Zee}}}$ and external field ${\textbf{H}_{\mathrm{ext}}}$.
+
+You can find and plot the total energy density minimum ${\epsilon_{\mathrm{min}}}$, the corresponding angle $\varphi_0$ and the value of the effective field
+${H_{\mathrm{eff}}|_{\epsilon=\epsilon_{\mathrm{min}}}}$.
 
 All magnetic fields are used in units of magnetic induction (tesla), that is, $\mu_0 H$.
 
 You can do only calculations or also plot the results of energy density in polar or rectilinear projection (for negative values rectilinear projection is preferred). 
 
-![polar example](/assets/test_plots/ani20221125_00_test_eden_polar.png)
+![polar example](/test_plots/ani20221125_00_test_eden_polar.png)
 
-![rectilinear example](/assets/test_plots/ani20221125_00_test_eden_rect.png)
+![rectilinear example](/test_plots/ani20221125_00_test_eden_rect.png)
 
 You can also plot the effective field and its components. Here the color signalizes the angle $\varphi$ continuously changing from $0$ to $2\pi$.
 
-![heff example](/assets/test_plots/ani20221125_00_test_heff.png)
+![heff example](/test_plots/ani20221125_00_test_heff.png)
 
 If you are interested, you can also plot the magnetic induction but, in case of weak fields, this plot is quite useless.
 
-![beff example](/assets/test_plots/ani20221125_00_test_beff.png)
+![beff example](/test_plots/ani20221125_00_test_beff.png)
 
 For complete examples see `main()` functions in `epsmin_heff.py` and `cylinder_test.py`.
 
