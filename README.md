@@ -18,7 +18,7 @@ This package calculates energy density $\epsilon$ and effective magnetic field $
 - uniaxial anisotropy energy density ${\epsilon_{\mathrm{ani}}}$ and field ${\textbf{H}_{\mathrm{ani}}}$
 - Zeeman energy density ${\epsilon_{\mathrm{Zee}}}$ and external field ${\textbf{H}_{\mathrm{ext}}}$.
 
-You can find and plot the total energy density minimum ${\epsilon_{\mathrm{min}}}$, the corresponding angle $\varphi_0$ and the value of the effective field ${H_{\mathrm{eff}}$ $|_{\epsilon=\epsilon_{\mathrm{min}}}}$.
+You can find and plot the total energy density minimum ${\epsilon_{\mathrm{min}}}$, the corresponding angle $\varphi_0$ and the value of the effective field ${H_{\mathrm{eff}}}$ for ${\epsilon=\epsilon_{\mathrm{min}}}$.
 
 All magnetic fields are used in units of magnetic induction (tesla), that is, $\mu_0 H$.
 
