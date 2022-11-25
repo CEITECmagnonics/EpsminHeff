@@ -1,0 +1,28 @@
+Metadata for same-named plot.
+*** Plot setup: ***
+DPI = 250
+plot total: True
+fit angle: True
+add title: True
+plot rectilinear: True
+plot polar: True
+plot heff: True
+plot beff: True
+save pdf: False
+*** Model components: ***
+dipolar: True
+uniaxial anisotropy: True
+Zeeman/external: True
+*** Variables: ***
+M_sat [A/m] = 830000.0
+comp. nodes = 100
+demag. tensor N diagonal [] = (0.00031249987796441335, 0.00031249987796441335, 0.9993750002440616)
+Tr(N) [] (1 expected) = 0.9999999999999903K_u [J/m^3] = 8300.0
+delta [rad] = 1.2217304763960306
+mu_0*H_ext [T] = 0.005
+xi [rad] = 2.443460952792061
+*** Results of computation: ***
+phi for epsilon_min [rad] = 1.4394875713518855
+epsilon_min [kJ/m^3] = -1705705.1937887797
+mu_0*H_eff [mT] = 0.021425364496212636
+B_eff [T] = 1.0644341254880239

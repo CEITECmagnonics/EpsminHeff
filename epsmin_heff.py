@@ -15,8 +15,10 @@ Included functions:
         anisotropic magnetic field.
     bani2ku - converts anisotropic magnetic field to equivalent
         uniaxial anisotropy constant.
-    aharoni - calculates demagnetization factors of a rectangular
-        prism using the Aharoni model.
+    aharoni - calculates demagnetization factors of a homogenously
+        magnetized rectangular prism using the Aharoni model.
+    wysin_cylinder - calculates demagnetization factors of
+        a homogenously magnetized cylinder.
 
 @author: Jan Klíma, jan.klima4@vutbr.cz
 """
@@ -32,36 +34,41 @@ MU0 = 4*np.pi*1e-7  # [N/A^2] permeability of vacuum
 
 
 def main():
-    """Function setting all the parameters and controlling the
+    """Function for setting all the parameters and controlling the
     computation.  The same could be called from outside."""
-    name, dpi = "ani20221124_01_test", 250
+    name, dpi = "ani20221125_00_test", 250
     loc = "test_plots"
     n = 100
     # rectangular prism -> demag factors from Aharoni model
     dims = (25e-6, 5e-6, 10e-9)  # [m] dimensions of the body in xyz order
+    demfs = (aharoni(dims[1], dims[2], dims[0]),
+             aharoni(dims[2], dims[0], dims[1]), aharoni(*dims))
     msat = 830e3  # [A/m] saturation magnetization M_s
     ku = bani2ku(20e-3, msat)  # [J/m^3] uniaxial anisotropy constant K_u
     delta = (90-20)*np.pi/180  # [rad] tilt of uniax. anisotropy from x axis
     bext = 5e-3  # [T] external magnetic inducton B_ext
     xi = (90 + 50) * np.pi / 180  # [rad] tilt of B_ext from x axis
-    demfs = (aharoni(dims[1], dims[2], dims[0]),
-             aharoni(dims[2], dims[0], dims[1]), aharoni(*dims))
     title = "Testing title for some composition of the plot."
     darling = EpsminHeff(msat, name, loc, dpi, n, True, True, True, True, True,
                          True, True, True, True, True, False, title=title,
                          demag_factors=demfs, ku=ku, delta=delta, bext=bext,
                          xi=xi)
+    # custom change of angle names from varphi to alpha
+    darling.angles[2], darling.angles[3] = r"$\alpha$", r"$\alpha_0$"
     darling.evaluate()
+    darling.title = "New custom title."
+    darling.name = name+"_newtitle"  # new name not to overwrite the old plot
+    darling.plot_heff()  # plot a new graph with new title
 
 
 class EpsminHeff:
     """Class characterizing the process of finding the minima of
-     the energy density eps_tot and value of the effective field
+     the energy density eps_tot and the value of the effective field
      mu_0*H_eff in the xy plane.
      Keyword Args:
          msat - float, [A/m] saturation magnetization of the magnetic
             body M_sat.
-        name - str, common name of the plot and metadata files
+        name - str, common name of the plots and metadata files
             (without extension).
         loc - str (default ""), base directory for saving files into.
             Preferably, use slashes instead of backslashes.
@@ -94,19 +101,21 @@ class EpsminHeff:
             effective magnetic induction (and its components).
         save_pdf - bool (default False), whether to save all plots
             also in PDF format.
+        serif - bool (default True), whether to plot text in serif
+            font family.
         title - None or str (default None), if given as a str, this
             will be used as a title for all plots.  Note: To have
             different titles on your figures, you can change this
             value with self.title between calling each plotting method.
         save_metadata - bool (default True), whether to save all
             computation parameters into a TXT file.
-        demag_factors - 3 tuple (or list) of floats
+        demag_factors - 3-tuple (or list) of floats
             (default (0., 0., 1.)), diagonal components of the
             demagnetizing tensor.  This script accounts only for
             geometries of the body that have a diagonal demagnetizing
             tensor.  This may change in the future. The default value
             corresponds to an infinite layer in the computed plane.
-        ku - float (default 0), [J/m^3] uniaxial anisotropy
+        ku - float (default 0.), [J/m^3] uniaxial anisotropy
             constant K_u.
         delta - float (default 0.), [rad] tilt of uniaxial anisotropy
             axis from the x axis.
@@ -155,7 +164,7 @@ class EpsminHeff:
         colors - 4-list of colormaps for n values (default colormaps
             are Reds, Blues, Greens, Oranges), these colormaps are
             used in H_eff and B_eff plots for fields in this order:
-            dipolar, anisotropy, external, total. By default these
+            dipolar, anisotropy, external, total.  By default these
             colormaps correspond to colors in the color (or self.color
             if you prefer).
         color - 4-list of color strings (default ["tab:red",
@@ -217,8 +226,8 @@ class EpsminHeff:
                  use_dip=False, use_uniax=False, use_bext=False,
                  plot_total=False, fit_angle=True, plot_other_angles=True,
                  plot_rectilinear=True, plot_polar=False,
-                 plot_heff=True, plot_beff=True, save_pdf=False, title=None,
-                 save_metadata=True,
+                 plot_heff=True, plot_beff=True, save_pdf=False, serif=True,
+                 title=None, save_metadata=True,
                  demag_factors=(0., 0., 1.),
                  ku=0., delta=0.,
                  bext=0., xi=0.):
@@ -231,6 +240,8 @@ class EpsminHeff:
         self.plot = [plot_total, fit_angle, plot_other_angles,
                      plot_rectilinear, plot_polar, plot_heff, plot_beff,
                      save_pdf]
+        if serif:
+            mf.makemyfontnice()  # for serif fonts
         self.title = title
         self.metadata = save_metadata
         self.demfs = demag_factors
@@ -364,7 +375,6 @@ class EpsminHeff:
         epsilon on magnetization direction angle phi in rectilinear
         projection.
         """
-        mf.makemyfontnice()
         fig, ax = plt.subplots(1, 1, figsize=self.figs_size[0],
                                constrained_layout=True)
         for i, j in enumerate(self.use):
@@ -418,7 +428,6 @@ class EpsminHeff:
         epsilon on magnetization direction angle phi in polar
         projection.
         """
-        mf.makemyfontnice()
         fig, ax = plt.subplots(1, 1, figsize=self.figs_size[1],
                                constrained_layout=True,
                                subplot_kw={"projection": "polar"})
@@ -640,8 +649,8 @@ def ytilt(theta):
 def ku2bani(ku, msat):
     """Function that recalculates uniaxial anisotropy constant to
     equivalent anisotropic magnetic field.
-    ku - [J/m3] anisotropy constant.
-    msat - [A/m] saturation magnetisation.
+    ku - [J/m3] uniaxial anisotropy constant K_u.
+    msat - [A/m] saturation magnetisation M_s.
     Returns:
     bani - [T] anisotropic magnetic field mu_0*H_ani.
     """
@@ -652,9 +661,9 @@ def bani2ku(bani, msat):
     """Function that recalculates anisotropic magnetic field to
     equivalent uniaxial anisotropy constant.
     bani - [T] anisotropic magnetic field mu_0*H_ani.
-    msat - [A/m] saturation magnetisation.
+    msat - [A/m] saturation magnetisation M_s.
     Returns:
-    ku - [J/m3] anisotropy constant.
+    ku - [J/m3] uniaxial anisotropy constant K_u.
     """
     return msat*bani/2
 
@@ -673,6 +682,20 @@ def aharoni(a, b, c):
             2*np.arctan(a*b/c/r) + (a**3+b**3-2*c**3)/3/a/b/c +
             c/a/b*(ac+bc) + (a**2+b**2-2*c**2)*r/3/a/b/c -
             (ab**3+bc**3+ac**3)/3/a/b/c)/np.pi
+
+
+def wysin_cylinder(h, r):
+    """Returns diagonal components Nx, Ny, Nz of the demagnetization
+    tensor from Wysin's solution for a homogenously magnetized
+    cylinder with rotational axis along z drection.  For more info
+    see: https://www.phys.ksu.edu/personal/wysin/notes/demag.pdf
+    h - float or ndarray, [m] height of the cylinder.
+    r - float or ndarray of the same shape as h, [m] radius of the
+        cylinder's circular base.
+    """
+    nxy = 1/2/h*(np.sqrt(h**2 + r**2) - r)
+    nz = 1/h*(h + r - np.sqrt(h**2 + r**2))
+    return nxy, nxy, nz
 
 
 if __name__ == "__main__":
