@@ -18,8 +18,7 @@ This package calculates energy density $\epsilon$ and effective magnetic field $
 - uniaxial anisotropy energy density ${\epsilon_{\mathrm{ani}}}$ and field ${\textbf{H}_{\mathrm{ani}}}$
 - Zeeman energy density ${\epsilon_{\mathrm{Zee}}}$ and external field ${\textbf{H}_{\mathrm{ext}}}$.
 
-You can find and plot the total energy density minimum ${\epsilon_{\mathrm{min}}}$, the corresponding angle $\varphi_0$ and the value of the effective field
-``{H_{\mathrm{eff}}|_{\epsilon=\epsilon_{\mathrm{min}}}}``.
+You can find and plot the total energy density minimum ${\epsilon_{\mathrm{min}}}$, the corresponding angle $\varphi_0$ and the value of the effective field ${H_{\mathrm{eff}}$ $|_{\epsilon=\epsilon_{\mathrm{min}}}}$.
 
 All magnetic fields are used in units of magnetic induction (tesla), that is, $\mu_0 H$.
 
@@ -29,7 +28,7 @@ You can do only calculations or also plot the results of energy density in polar
 
 ![rectilinear example](/test_plots/ani20221125_00_test_eden_rect.png)
 
-You can also plot the effective field and its components. Here the color signalizes the angle $\varphi$ continuously changing from $0$ to $2\pi$.
+You can also plot the effective field and its components. Here the color signalizes the angle $\varphi$ continuously changing from $0$ to $2\pi$ (color light to dark).
 
 ![heff example](/test_plots/ani20221125_00_test_heff.png)
 
@@ -43,7 +42,7 @@ For complete examples see `main()` functions in `epsmin_heff.py` and `cylinder_t
 ## Reference
 This reference guide might not be complete. For better understanding of how things work check the script inside the python files.
 
-### ´epsmin_heff.py´
+### `epsmin_heff.py`
 
 Main module file.
 
@@ -66,11 +65,11 @@ Function that recalculates uniaxial anisotropy constant to equivalent anisotropi
 - `ku` - [J/m3] uniaxial anisotropy constant $K_{\mathrm{u}}$.
 - `msat` - [A/m] saturation magnetisation $M_{\mathrm{s}}$.
 Returns:
-- `bani` - [T] anisotropic magnetic field $\mu_0*H_{\mathrm{ani}}$.
+- `bani` - [T] anisotropic magnetic field $\mu_0 H_{\mathrm{ani}}$.
 
 #### `bani2ku(bani, msat)`
 Function that recalculates anisotropic magnetic field to equivalent uniaxial anisotropy constant.
-- `bani` - [T] anisotropic magnetic field $\mu_0*H_{\mathrm{ani}}$.
+- `bani` - [T] anisotropic magnetic field $\mu_0 H_{\mathrm{ani}}$.
 - `msat` - [A/m] saturation magnetisation $M_{\mathrm{s}}$.
 Returns:
 - `ku` - [J/m3] uniaxial anisotropy constant $K_{\mathrm{u}}$.
