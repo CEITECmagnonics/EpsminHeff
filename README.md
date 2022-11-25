@@ -19,7 +19,7 @@ This package calculates energy density $\epsilon$ and effective magnetic field $
 - Zeeman energy density ${\epsilon_{\mathrm{Zee}}}$ and external field ${\textbf{H}_{\mathrm{ext}}}$.
 
 You can find and plot the total energy density minimum ${\epsilon_{\mathrm{min}}}$, the corresponding angle $\varphi_0$ and the value of the effective field
-$${H_{\mathrm{eff}}|_{\epsilon=\epsilon_{\mathrm{min}}}}$$.
+``{H_{\mathrm{eff}}|_{\epsilon=\epsilon_{\mathrm{min}}}}``.
 
 All magnetic fields are used in units of magnetic induction (tesla), that is, $\mu_0 H$.
 
@@ -41,7 +41,7 @@ For complete examples see `main()` functions in `epsmin_heff.py` and `cylinder_t
 
 
 ## Reference
- 
+This reference guide might not be complete. For better understanding of how things work check the script inside the python files.
 
 ### ´epsmin_heff.py´
 
