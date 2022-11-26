@@ -541,13 +541,17 @@ class EpsminHeff:
                      .format(np.sqrt(self.h_emin[0]**2+self.h_emin[1]**2)*1e3),
                      transform=ax.transAxes, path_effects=self.pe)
             plt.text(0.6, 0.8, self.angles[3] + r"$ = {:.3f}$°"
-                     .format(np.arctan(self.h_emin[1]/self.h_emin[0])
+                     .format(np.arctan2(self.h_emin[1], self.h_emin[0])
                              / np.pi*180), transform=ax.transAxes,
                      path_effects=self.pe)
-        plt.legend(loc="upper left")
-        leg = ax.get_legend()
-        for i, j in enumerate(leg.legendHandles[:np.sum(self.use)+1]):
-            j.set_color(self.color[i])
+        leg = plt.legend(loc="upper left")
+        # leg = ax.get_legend()
+        sup_i = 0
+        for i, j in enumerate(leg.legendHandles[:np.sum(self.use)
+                                                + self.plot[0]]):
+            if i < len(self.use) and not self.use[i]:
+                sup_i += 1
+            j.set_color(self.color[i+sup_i])
         if self.title is not None:
             plt.title(self.title)
         plt.savefig(self.loc+self.name+"_heff.png", dpi=self.dpi)
@@ -604,13 +608,16 @@ class EpsminHeff:
                                      + f_btoty(self.phi_emin)**2)*1e3),
                      transform=ax.transAxes, path_effects=self.pe)
             plt.text(0.6, 0.8, self.angles[3] + r"$ = {:.3f}$°"
-                     .format(np.arctan(f_btoty(self.phi_emin)
-                                       / f_btotx(self.phi_emin))/np.pi*180),
+                     .format(np.arctan2(f_btoty(self.phi_emin),
+                                        f_btotx(self.phi_emin))/np.pi*180),
                      transform=ax.transAxes, path_effects=self.pe)
-        plt.legend(loc="upper left")
-        leg = ax.get_legend()
-        for i, j in enumerate(leg.legendHandles[:np.sum(self.use)+1]):
-            j.set_color(self.color[i])
+        leg = plt.legend(loc="upper left")
+        sup_i = 0
+        for i, j in enumerate(leg.legendHandles[:np.sum(self.use)
+                                                + self.plot[0]]):
+            if i < len(self.use) and not self.use[i]:
+                sup_i += 1
+            j.set_color(self.color[i + sup_i])
         if self.title is not None:
             plt.title(self.title)
         plt.savefig(self.loc+self.name+"_beff.png", dpi=self.dpi)
