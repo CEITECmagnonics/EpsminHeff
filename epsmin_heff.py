@@ -128,7 +128,7 @@ class EpsminHeff:
         msat - msat init kwarg.
         name - name init kwarg.
         loc - loc init kwarg with a slash appended at the end if
-            it was not there before.
+            it was not there before and if the loc kwarg is not "".
         dpi - dpi init kwarg.
         n - npoints init kwarg.
         use - list of bools, defines used model parts from init
@@ -233,7 +233,10 @@ class EpsminHeff:
                  bext=0., xi=0.):
         self.msat = msat
         self.name = name
-        self.loc = loc.rstrip("/") + "/"
+        if loc != "":
+            self.loc = loc.rstrip("/") + "/"
+        else:
+            self.loc = loc
         self.dpi = dpi
         self.n = npoints
         self.use = [use_dip, use_uniax, use_bext]
