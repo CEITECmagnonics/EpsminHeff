@@ -453,8 +453,8 @@ class EpsminHeff:
                     "{:.1f}°".format(self.phi_emin*180/np.pi),
                     path_effects=self.pe)
         if self.plot[2] and self.use[1]:  # plot angle of uni. anisotropy axis
-            ax.plot([self.delta, 0, self.delta], [rlims[1], 0, rlims[1]], "--",
-                    lw=1, c=self.color[1])
+            ax.plot([self.delta, 0, self.delta+np.pi], [rlims[1], 0, rlims[1]],
+                    "--", lw=1, c=self.color[1])
             ax.plot(np.linspace(0, self.delta, 50),
                     np.ones(50) * rlims[1] * rheights[1], "-k", lw=0.5)
             ax.text(self.delta / 2, rlims[1] * (rheights[1] + 0.02),
