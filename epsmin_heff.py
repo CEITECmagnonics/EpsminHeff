@@ -366,9 +366,9 @@ class EpsminHeff:
             file.write("*** Results of computation: ***\n")
             file.write(f"phi for epsilon_min [rad] = {self.phi_emin}\n")
             if self.plot[1]:
-                file.write(f"epsilon_min [kJ/m^3] = {self.emin*1e3}\n")
+                file.write(f"epsilon_min [kJ/m^3] = {self.emin*1e-3}\n")
                 heff = np.sqrt(self.h_emin[0]**2 + self.h_emin[1]**2)
-                file.write(f"mu_0*H_eff [mT] = {heff}\n")
+                file.write(f"mu_0*H_eff [mT] = {heff*1e3}\n")
                 # H_eff and M should be parallel in energy minimum => sum
                 file.write(f"B_eff [T] = {heff+MU0*self.msat}\n")
         print("Metadata saved.")
@@ -548,7 +548,6 @@ class EpsminHeff:
                              / np.pi*180), transform=ax.transAxes,
                      path_effects=self.pe)
         leg = plt.legend(loc="upper left")
-        # leg = ax.get_legend()
         sup_i = 0
         for i, j in enumerate(leg.legendHandles[:np.sum(self.use)
                                                 + self.plot[0]]):
