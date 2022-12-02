@@ -358,7 +358,7 @@ class EpsminHeff:
             file.write(f"M_sat [A/m] = {self.msat}\n")
             file.write(f"comp. nodes = {self.n}\n")
             file.write(f"demag. tensor N diagonal [] = {self.demfs}\n")
-            file.write(f"Tr(N) [] (1 expected) = {np.sum(self.demfs)}")
+            file.write(f"Tr(N) [] (1 expected) = {np.sum(self.demfs)}\n")
             file.write(f"K_u [J/m^3] = {self.ku}\n")
             file.write(f"delta [rad] = {self.delta}\n")
             file.write(f"mu_0*H_ext [T] = {self.bext}\n")
