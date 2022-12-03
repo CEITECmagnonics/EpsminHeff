@@ -1,5 +1,5 @@
 # EpsminHeff
-Computation of energy density minima and effective field values.
+Python module for computation of energy density minima and effective field values.
 
 ## Requirements
 I'm not sure about all dependencies, but here are package versions I used:
