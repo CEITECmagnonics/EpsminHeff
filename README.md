@@ -44,11 +44,11 @@ By using the previously calculated energy density, we can construct hysteresis l
 
 Here small amount of points is used, so that we can look on the total energy density, and the minima changing with $B_{\mathrm{ext}}$ (the points from big to small). The dashed lines represent areas, where the minima are calculated for each energy profile.
 
-![energy density in the loop - example](SW_00_xi90_delta75_Bani6p5mT_x25um_y5um_z10nm_EdenMinima.png)
+![energy density in the loop - example](/hystloop_example_plots/SW_00_xi90_delta75_Bani6p5mT_x25um_y5um_z10nm_EdenMinima.png)
 
 When we plot the hysteresis loop for different $\xi$ angles and with more points, we can get something like this. (Function generating this plot is trivial to write, therefore is not included here.)
 
-![hystloops for more xis](SW_00_xi0t90n7_delta0_Bani6p5mT_x25um_y5um_z10nm_hystloop.png)
+![hystloops for more xis](/hystloop_example_plots/SW_00_xi0t90n7_delta0_Bani6p5mT_x25um_y5um_z10nm_hystloop.png)
 
 
 For complete examples see `main()` functions in `epsmin_heff.py`, `cylinder_test.py`, and `hystloop_example.py`.
