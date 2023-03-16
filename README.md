@@ -184,7 +184,7 @@ Class characterizing the process of finding the minima of the energy density $\e
 - `evaluate(self)` - automatic processiing of the calculation and plotting according to the calculation setup.
 
 
-#### `Hysteresis`
+#### `Hysteresis(self, ehobj, loopn=300, bext_max=None, plot_hyst_loop=True, plot_eden_profile=False, eden_cmap=None, disp_messages=False)`
 
 Class for calculating Stoner-Wohlfarth-like hysteresis loops based on EpsminHeff class.  Due to EpsminHeff, the model is restricted to xy plane.
 
