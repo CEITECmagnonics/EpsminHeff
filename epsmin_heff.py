@@ -863,10 +863,13 @@ class Hysteresis:
             # I assumed the energy density has only small amount of extrema and
             #   is quite smooth, so to find them, small prominence is used.
             peaks, props = find_peaks(self.ehobj.eden[3], prominence=1e-3)
-            if np.shape(peaks) == (0,):
+            if np.shape(peaks) == (0,) or np.shape(peaks) == (1,):
                 # in case of empty list of peaks -> include one edge
+                # Also do this for the case of one peak (in special cases this
+                #   may prove useful and should not affect normal cases)
                 elonetot = np.hstack((self.ehobj.eden[3][-2],
                                       self.ehobj.eden[3]))
+                #                       self.ehobj.eden[3][1]))  # second edge
                 peaks, props = find_peaks(elonetot, prominence=1e-3)
                 peaks = peaks - 1  # get indices of non-elongated e_tot
             printif(self.mess, f"Bext={self.bexts[i]:.05f} T, ",
