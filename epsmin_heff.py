@@ -199,7 +199,7 @@ class EpsminHeff:
             plot_other_angles.  By default this creates a 0.5-thick
             white outline around the letters (for better clarity of
             drawn angle values).
-        siffixes - 5-list of str, file suffixes to append to loc+name
+        suffixes - 5-list of str, file suffixes to append to loc+name
             in the following order:
             metadata, energy density rectilinear plot, energy density
             polar, effective field plot, effective induction plot.
@@ -695,7 +695,7 @@ class Hysteresis:
 
     Keyword Args:
         ehobj - EpsminHeff object, serves as a starting point in
-            calculations. Most parameters (e.g. n, msat, xi, ...) are
+            calculations.  Most parameters (e.g. n, msat, xi, ...) are
             acquired from it.
         bext_max - float or None (default None), [T] maximum applied
             external field.  Determines hysteresis-loop limits as
@@ -728,11 +728,11 @@ class Hysteresis:
         edp_cmap - eden_cmap init kwarg.
         mess - disp_messages init kwarg.
         m - 1D numpy array, [1] normalized magnetisation component
-            along an axis defined by xi, m.shape is (loopn, ).
+            along an axis defined by ehobj.xi, m.shape is (loopn, ).
             Hysteresis-loop data are stored here.
         hl_figsize - 2-tuple of float (default (6.5, 4)), [in]
             hysteresis-loop (HL) figure size.
-        hl_kwargs - dict (default {"ls": ".-", "marker": ".", "lw": 1,
+        hl_kwargs - dict (default {"ls": ".-", "marker": ".", "lw": 1.5,
             "c": "tab:blue", "ms": 1.5}), keyword arguments to pass
             into plt.plot() of the HL plot.
         hl_legend - str or None (default None), if str, legend will be
@@ -795,7 +795,7 @@ class Hysteresis:
             ehobj (see EpsminHeff.reset_computation() method), bexts,
             m, hl_leglabel, edps, edp_peaks, edp_bounds, edp_phiemins,
             edp_axlabels.
-        evaluate(self) - automatic processiing of the calculation and
+        evaluate(self) - automatic processing of the calculation and
             plotting according to the calculation setup.
     """
     def __init__(self, ehobj, loopn=300, bext_max=None, plot_hyst_loop=True,
@@ -818,7 +818,7 @@ class Hysteresis:
         self.m = np.zeros(self.loopn)
         # ### hysteresis loop plot params
         self.hl_figsize = (6.5, 4)
-        self.hl_kwargs = {"ls": "-", "marker": ".", "lw": 1, "c": "tab:blue",
+        self.hl_kwargs = {"ls": "-", "marker": ".", "lw": 1.5, "c": "tab:blue",
                           "ms": 1.5}
         self.hl_legend = None
         self.hl_leglabel = r"$\xi=${}$\,$°".format(self.ehobj.xi)
@@ -1082,7 +1082,7 @@ def wysin_cylinder(h, r):
     see: https://www.phys.ksu.edu/personal/wysin/notes/demag.pdf
     h - float or ndarray, [m] height of the cylinder.
     r - float or ndarray, [m] radius of the
-        cylinder's circular base. If h and r are ndarrays, r and h
+        cylinder's circular base. If h and r are ndarrays, they
         must have the same size.
     """
     nxy = 1/2/h*(np.sqrt(h**2 + r**2) - r)
