@@ -965,7 +965,8 @@ class Hysteresis:
     def plot_hl(self):
         """Method for plotting the hysteresis loop."""
         fig = plt.figure(figsize=self.hl_figsize)
-        plt.plot(self.bexts, self.m, label=self.hl_leglabel, **self.hl_kwargs)
+        plt.plot(self.bexts*1e3, self.m, label=self.hl_leglabel,
+                 **self.hl_kwargs)
         if self.hl_legend is not None:
             plt.legend(loc=self.hl_legend)
         plt.xlabel(self.hl_axlabels[0])
