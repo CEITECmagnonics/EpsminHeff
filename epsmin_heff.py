@@ -5,11 +5,15 @@ Useful in magnonics research.
 Included classes:
     EpsminHeff - Compute energy density minima and effective field
         value in the xy plane.
+    Hysteresis - Compute hysteresis loops of Stoner-Wohlfarth-like
+        origin based on EpsminHeff class. Restriction to xy plane
+        still applies.
 
 Included functions:
-     main - used for direct execution of this file.  May serve as an
+    main - used for direct execution of this file.  May serve as an
         example of usage for this module.
-     ytilt - from deviation from x axis in rad returns deviation from
+    printif - print text in terminal upon a condition.
+    ytilt - from deviation from x axis in rad returns deviation from
         y axis in °.
     ku2bani - converts uniaxial anisotropy constant to equivalent
         anisotropic magnetic field.
@@ -26,9 +30,9 @@ Included functions:
 import numpy as np  # for vectorization
 import matplotlib.pyplot as plt  # for plotting
 import matplotlib.patheffects as mpe  # for text formatting in plots
-from scipy.optimize import fmin  # for energy minima finding
-from scipy.interpolate import interp1d  # for sth similar
-import myfxs as mf  # see https://github.com/GiovanniKl/MyFxsPackage
+from scipy.optimize import fmin, fminbound  # for energy minima finding
+from scipy.interpolate import interp1d  # for smaller discretization effects
+from scipy.signal import find_peaks  # for energy peak finding (in Hysteresis)
 
 MU0 = 4*np.pi*1e-7  # [N/A^2] permeability of vacuum
 
@@ -65,6 +69,7 @@ class EpsminHeff:
     """Class characterizing the process of finding the minima of
      the energy density eps_tot and the value of the effective field
      mu_0*H_eff in the xy plane.
+
      Keyword Args:
          msat - float, [A/m] saturation magnetization of the magnetic
             body M_sat.
@@ -101,8 +106,6 @@ class EpsminHeff:
             effective magnetic induction (and its components).
         save_pdf - bool (default False), whether to save all plots
             also in PDF format.
-        serif - bool (default True), whether to plot text in serif
-            font family.
         title - None or str (default None), if given as a str, this
             will be used as a title for all plots.  Note: To have
             different titles on your figures, you can change this
@@ -122,6 +125,8 @@ class EpsminHeff:
         bext - float (default 0.), [T] external magnetic field
             mu_0*H_ext (in units of magnetic induction).
         xi - float (default 0.), [rad] tilt of H_ext from the x axis.
+        disp_messages - bool (default True), whether to print status
+            messages into terminal.
 
     Stored Values:
         (for kwargs info see above)
@@ -142,6 +147,7 @@ class EpsminHeff:
         delta - delta init kwarg.
         bext - bext init kwarg.
         xi - xi init kwarg.
+        mess - disp_messages init kwarg.
         phi - ndarray of shape (n,), [rad] angles of magnetization to
             compute at.
         eden - ndarray of shape (4, n), [J/m^3] energy density
@@ -193,10 +199,18 @@ class EpsminHeff:
             plot_other_angles.  By default this creates a 0.5-thick
             white outline around the letters (for better clarity of
             drawn angle values).
+        siffixes - 5-list of str, file suffixes to append to loc+name
+            in the following order:
+            metadata, energy density rectilinear plot, energy density
+            polar, effective field plot, effective induction plot.
 
     Methods:
-        compute_energy_density(self) - calculates all the necessary
-            energy density components and its minimum position.
+        compute_energy_density(self, disp_mess_fmin=False)
+            - calculates all the necessary energy density components
+            and its minimum position.
+            Arguments:
+                disp_mess_fmin - bool, whether to print minimization
+                    procedure output messages into terminal.
         compute_effective_field(self) - calculates all the necessary
             magnetic field components (as mu_0*H, that is, in units of
             induction).
@@ -219,6 +233,10 @@ class EpsminHeff:
             components.  If fit_angle is True, also plots effective
             magnetic induction for angle phi_0 (angle of
             magnetization from x axis at energy density minimum).
+        reset_computation(self) - resets calculated data in order to
+            do some calculation procedures repeatably with changed
+            parameters. Affects values of:
+            phi, eden, htot, hdip, hani, phi_emin, emin, h_emin.
         evaluate(self) - automatic processiing of the calculation and
             plotting according to the calculation setup.
     """
@@ -226,14 +244,17 @@ class EpsminHeff:
                  use_dip=False, use_uniax=False, use_bext=False,
                  plot_total=False, fit_angle=True, plot_other_angles=True,
                  plot_rectilinear=True, plot_polar=False,
-                 plot_heff=True, plot_beff=True, save_pdf=False, serif=True,
+                 plot_heff=True, plot_beff=True, save_pdf=False,
                  title=None, save_metadata=True,
                  demag_factors=(0., 0., 1.),
                  ku=0., delta=0.,
-                 bext=0., xi=0.):
+                 bext=0., xi=0., disp_messages=True):
         self.msat = msat
         self.name = name
-        if loc != "":
+        if loc.find("\\") > -1:
+            raise Exception("Location parameter includes backslashes! "
+                            + "Replace them with slashes.")
+        elif loc != "":
             self.loc = loc.rstrip("/") + "/"
         else:
             self.loc = loc
@@ -243,8 +264,6 @@ class EpsminHeff:
         self.plot = [plot_total, fit_angle, plot_other_angles,
                      plot_rectilinear, plot_polar, plot_heff, plot_beff,
                      save_pdf]
-        if serif:
-            mf.makemyfontnice()  # for serif fonts
         self.title = title
         self.metadata = save_metadata
         self.demfs = demag_factors
@@ -252,6 +271,7 @@ class EpsminHeff:
         self.delta = delta
         self.bext = bext
         self.xi = xi
+        self.mess = disp_messages
         # phi vector - [rad] angles of magnetization to compute at
         self.phi = np.linspace(0, 2*np.pi, self.n)
         # preallocation for other used variables
@@ -271,7 +291,8 @@ class EpsminHeff:
         # plot setup variables
         self.line_width = 1.5
         self.figs_size = [(4, 3), (4, 3), (6, 4), (6, 4)]  # rect/pol/heff/beff
-        self.elabels = [r"$\epsilon_{\mathrm{dip}}$",
+        self.elabels = [r"$\epsilon$",
+                        r"$\epsilon_{\mathrm{dip}}$",
                         r"$\epsilon_{\mathrm{ani}}$",
                         r"$\epsilon_{\mathrm{Zee}}$",
                         r"$\epsilon_{\mathrm{tot}}$"]
@@ -288,8 +309,10 @@ class EpsminHeff:
                         r"$\mu_0 (H_{\mathrm{eff}}+M)$"]
         self.angles = [r"$\delta$", r"$\xi$", r"$\varphi$", r"$\varphi_0$"]
         self.pe = [mpe.Stroke(linewidth=0.5, foreground='w'), mpe.Normal()]
+        self.suffixes = ["_metadata", "_eden_rect", "_eden_polar", "_heff",
+                         "_beff"]
 
-    def compute_energy_density(self):
+    def compute_energy_density(self, disp_mess_fmin=False):
         """Computes all energy density components and energy-density
          minimum position.
          """
@@ -313,9 +336,10 @@ class EpsminHeff:
 
             start_phi = self.phi[np.argmin(self.eden[3])]
             # self.phi_emin = fmin(f_etot, start_phi)[0]  # without symmetry
-            fminout = fmin(f_etot_sym, start_phi, full_output=True)
+            fminout = fmin(f_etot_sym, start_phi, full_output=True,
+                           disp=disp_mess_fmin)
             self.phi_emin, self.emin = fminout[0][0], fminout[1]
-        print("Energy density calculated.")
+        printif(self.mess, "Energy density calculated.")
 
     def compute_effective_field(self):
         """Computes all magnetic field components."""
@@ -338,7 +362,7 @@ class EpsminHeff:
             f_htotx = interp1d(self.phi, self.htot[0], "cubic")
             f_htoty = interp1d(self.phi, self.htot[1], "cubic")
             self.h_emin = [f_htotx(self.phi_emin), f_htoty(self.phi_emin)]
-        print("Effective field calculated.")
+        printif(self.mess, "Effective field calculated.")
 
     def save_metadata(self):
         """Saves all parameters of the calculation."""
@@ -346,7 +370,7 @@ class EpsminHeff:
                      "plot rectilinear", "plot polar", "plot heff",
                      "plot beff", "save pdf")
         use_info = ("dipolar", "uniaxial anisotropy", "Zeeman/external")
-        with open(self.loc+self.name+"_metadata.txt", "w+") as file:
+        with open(self.loc+self.name+self.suffixes[0]+".txt", "w+") as file:
             file.write("Metadata for same-named plot.\n*** Plot setup: ***\n")
             file.write(f"DPI = {self.dpi}\n")
             for i, j in enumerate(self.plot):
@@ -371,7 +395,7 @@ class EpsminHeff:
                 file.write(f"mu_0*H_eff [mT] = {heff*1e3}\n")
                 # H_eff and M should be parallel in energy minimum => sum
                 file.write(f"B_eff [T] = {heff+MU0*self.msat}\n")
-        print("Metadata saved.")
+        printif(self.mess, "Metadata saved.")
 
     def plot_rectilinear(self):
         """Creates and saves a dependence plot of energy density
@@ -383,10 +407,10 @@ class EpsminHeff:
         for i, j in enumerate(self.use):
             if j:
                 ax.plot(self.phi, self.eden[i], "-", c=self.color[i],
-                        lw=self.line_width, label=self.elabels[i])
+                        lw=self.line_width, label=self.elabels[i+1])
         if self.plot[0]:  # plot total energy density
             ax.plot(self.phi, self.eden[3], "-", c=self.color[3],
-                    lw=self.line_width, label=self.elabels[3])
+                    lw=self.line_width, label=self.elabels[4])
         ax.legend(loc="upper right")
         ylims = ax.get_ylim()
         xticklabels = np.arange(0, 361, 45)
@@ -395,7 +419,7 @@ class EpsminHeff:
         ax.set_xlabel(self.angles[2]+" [°]")
         yticks = ax.get_yticks()
         ax.set_yticks(yticks, np.array(yticks)*1e-3)
-        ax.set_ylabel(r"$\epsilon$ [kJ/m$^3$]")
+        ax.set_ylabel(self.elabels[0]+" [kJ/m$^3$]")
         ax.set_ylim(ylims)  # just to make sure limits are not changed
         if self.plot[1]:  # plot angle of energy density minimum
             ax.plot(self.phi_emin * np.ones(2), ylims, "--", c=self.color[3],
@@ -420,11 +444,11 @@ class EpsminHeff:
         if self.title is not None:  # add suptitle to the figure
             fig.suptitle(self.title)
         ax.grid()
-        plt.savefig(self.loc+self.name+"_eden_rect.png", dpi=self.dpi)
+        plt.savefig(self.loc+self.name+self.suffixes[1]+".png", dpi=self.dpi)
         if self.plot[7]:
-            plt.savefig(self.loc + self.name + "_eden_rect.pdf")
+            plt.savefig(self.loc+self.name+self.suffixes[1]+".pdf")
         plt.close(fig)
-        print("Rectilinear plot saved.")
+        printif(self.mess, "Rectilinear plot saved.")
 
     def plot_polar(self):
         """Creates and saves a dependence plot of energy density
@@ -437,10 +461,10 @@ class EpsminHeff:
         for i, j in enumerate(self.use):
             if j:
                 ax.plot(self.phi, self.eden[i], "-", c=self.color[i],
-                        lw=self.line_width, label=self.elabels[i])
+                        lw=self.line_width, label=self.elabels[i+1])
         if self.plot[0]:  # plot total energy density
             ax.plot(self.phi, self.eden[3], "-", c=self.color[3],
-                    lw=self.line_width, label=self.elabels[3])
+                    lw=self.line_width, label=self.elabels[4])
         ax.legend(loc="lower left", bbox_to_anchor=(1.1, -0.2))
         rlims = ax.get_ylim()
         rheights = (0.8, 0.6, 0.4)
@@ -495,13 +519,13 @@ class EpsminHeff:
         axl.set_yticks(rticks, rticklabels)
         axl.tick_params(right=False)
         axl.set_ylim(rlims)
-        axl.set_ylabel(r"$\epsilon$ [kJ/m$^3$]")
+        axl.set_ylabel(self.elabels[0]+" [kJ/m$^3$]")
         ax.set_xlabel(self.angles[2])
-        plt.savefig(self.loc+self.name+"_eden_polar.png", dpi=self.dpi)
+        plt.savefig(self.loc+self.name+self.suffixes[2]+".png", dpi=self.dpi)
         if self.plot[7]:
-            plt.savefig(self.loc + self.name + "_eden_polar.pdf")
+            plt.savefig(self.loc+self.name+self.suffixes[2]+".pdf")
         plt.close(fig)
-        print("Polar plot saved.")
+        printif(self.mess, "Polar plot saved.")
 
     def plot_heff(self):
         """Creates and saves a dependence plot of effective magnetic
@@ -556,11 +580,11 @@ class EpsminHeff:
             j.set_color(self.color[i+sup_i])
         if self.title is not None:
             plt.title(self.title)
-        plt.savefig(self.loc+self.name+"_heff.png", dpi=self.dpi)
+        plt.savefig(self.loc+self.name+self.suffixes[3]+".png", dpi=self.dpi)
         if self.plot[7]:
-            plt.savefig(self.loc+self.name+"_heff.pdf")
+            plt.savefig(self.loc+self.name+self.suffixes[3]+".pdf")
         plt.close(fig)
-        print("Effective field plot saved.")
+        printif(self.mess, "Effective field plot saved.")
 
     def plot_beff(self):
         """Creates and saves a dependence plot of effective magnetic
@@ -622,15 +646,32 @@ class EpsminHeff:
             j.set_color(self.color[i + sup_i])
         if self.title is not None:
             plt.title(self.title)
-        plt.savefig(self.loc+self.name+"_beff.png", dpi=self.dpi)
+        plt.savefig(self.loc+self.name+self.suffixes[4]+".png", dpi=self.dpi)
         if self.plot[7]:
-            plt.savefig(self.loc+self.name+"_beff.pdf")
+            plt.savefig(self.loc+self.name+self.suffixes[4]+".pdf")
         plt.close(fig)
-        print("Effective inducion plot saved.")
+        printif(self.mess, "Effective inducion plot saved.")
+
+    def reset_computation(self):
+        """Method for resetting calculated data in order to do some
+        calculation procedures repeatably with changed parameters.
+        Affects values of:
+        phi, eden, htot, hdip, hani, phi_emin, emin, h_emin.
+        """
+        # phi vector - [rad] angles of magnetization to compute at
+        self.phi = np.linspace(0, 2*np.pi, self.n)
+        # preallocation for other used variables
+        self.eden = np.zeros((4, self.n))  # = [edip, eani, ezee, etot]
+        self.htot = np.zeros((2, self.n))
+        self.hdip = np.zeros((2, self.n))
+        self.hani = np.zeros((2, self.n))
+        self.phi_emin = None  # exact phi at minimal total energy density phi_0
+        self.emin = None  # exact energy density value at phi_0
+        self.h_emin = None  # exact eff. field value at phi_0 (x and y value)
 
     def evaluate(self):
         """Method for automatic processing of the calculations and
-        plotting. Calls all methods in the right order.  The same can
+        plotting.  Calls all methods in the right order.  The same can
         be done manually for more versatility.
         """
         self.compute_energy_density()
@@ -645,6 +686,343 @@ class EpsminHeff:
             self.plot_beff()
         if self.metadata:
             self.save_metadata()
+
+
+class Hysteresis:
+    """Class for calculating Stoner-Wohlfarth-like hysteresis loops
+    based on EpsminHeff class.  Due to EpsminHeff, the model is
+    restricted to xy plane.
+
+    Keyword Args:
+        ehobj - EpsminHeff object, serves as a starting point in
+            calculations. Most parameters (e.g. n, msat, xi, ...) are
+            acquired from it.
+        bext_max - float or None (default None), [T] maximum applied
+            external field.  Determines hysteresis-loop limits as
+            <-bext_max; +bext_max>.  If None, determined from
+            ehobj.bext.
+        loopn - int (default 300), number of calculation points in the
+            hysteresis loop.
+        plot_hyst_loop - bool (default True), whether to plot the
+            final hysteresis loop using plot_loop() method.
+        plot_eden_profile - bool (default False), whether to plot total
+            energy density profiles for each B_ext (i.e. loopn-times).
+            Useful for small loopn (up to ca. 30). For larger values,
+            the plot might not be readable.
+        eden_cmap - matplotlib.cm object, matplotlib colormap
+            object used for energy density profiles.
+        disp_messages - bool (default False), whether to print status
+            messages into terminal. Applies to all messages except the
+            ones from ehobj (it has its own disp_messages kwarg).
+
+    Stored Values:
+        (for kwargs info see above)
+        ehobj - ehobj init kwarg.
+        loopn - loopn init kwarg.
+        bext_max - bext_max init kwarg.
+        bexts - 1D numpy array, [T] array of B_ext values for the
+            hysteresis loop starting at -bext_max (see init kwarg),
+            bexts.shape is (loopn, ).
+        plot_hyst_loop - plot_hyst_loop init kwarg.
+        plot_eden_profile - plot_eden_profile init kwarg.
+        edp_cmap - eden_cmap init kwarg.
+        mess - disp_messages init kwarg.
+        m - 1D numpy array, [1] normalized magnetisation component
+            along an axis defined by xi, m.shape is (loopn, ).
+            Hysteresis-loop data are stored here.
+        hl_figsize - 2-tuple of float (default (6.5, 4)), [in]
+            hysteresis-loop (HL) figure size.
+        hl_kwargs - dict (default {"ls": ".-", "marker": ".", "lw": 1,
+            "c": "tab:blue", "ms": 1.5}), keyword arguments to pass
+            into plt.plot() of the HL plot.
+        hl_legend - str or None (default None), if str, legend will be
+            displayed and this string defines the legend location of
+            the HL plot. If None, legend is not displayed.
+        hl_leglabel - str (default r"$\\xi=${}$\\,$°"
+            .format(self.ehobj.xi)), legend label for the HL plot.
+            Note that it will be displayed only if hl_legend is a valid
+            matplotlib legend location, that is, the loc kwarg.
+        hl_axlabels - 2-list of str (default
+            [r"$\\mathrm{\\mu}_0H$ [mT]", r"$M/M_{\\mathrm{s}}$ []"]),
+            the x and y axis labels for the HL plot.
+        hl_savesuffix - str (default "_hystloop"), suffix of the save
+            name for the HL plot.
+        edp_figsize - 2-tuple of float (default (6.5, 4)), [in]
+            energy-density-profiles (EDP) figure size.
+        edps - 2D numpy array or None, [J/m^3] list of energy density
+            profiles, edps.shape is (loopn, ehobj.n). Available only if
+            plot_eden_profile is True. Can be added when calling the
+            reset_computation() method after setting plot_eden_profile
+            to True.
+        edp_peaks - list or None, list of found peaks (numpy arrays of
+            int) for each row, that is energy profile, in edps.
+        edp_bounds - 2D numpy array or None, [rad] array of bounds for
+            each energy profile in edps,
+            edp_bounds.shape is (loopn, 2).
+        edp_phiemins - 1D numpy array of float, [rad] array of phi_emin
+            values for each energy profile in edps.
+        edp_plot - 4-list of bool (default [True, True, True, True]),
+            whether to plot EDP components in the following order:
+            energy profiles, found peaks, calculation areas, found
+            minima.
+        edp_cmaptype - str, one of {"sequential", "categorical"}
+            (default "sequential"), type of edp_cmap. Determines the
+            choice of colormap colors: "sequential" as
+            edp_cmap(i/loopn), "categorical" as edp_cmap(i % 255),
+            where i is the element index of bexts.
+        edp_legend - str or None (default None), if str, legend will be
+            displayed and this string defines the legend location of
+            the EDP plot. If None, legend is not displayed.
+        edp_leglabels - str (default "{:.1f} mT"), legend label format
+            string for the EDP plot with a pair of curly brackets for
+            the B_ext value in militeslas with a valid spec_format.
+            Note that it will be displayed only if edp_legend is a valid
+            matplotlib legend location, that is, the loc kwarg.
+        edp_axlabels - 2-list of str (default [self.ehobj.angles[2]
+            + " [°]", self.ehobj.elabels[4] + r" [kJ/m$^3$]"]),
+            the x and y axis labels for the EDP plot.
+        edp_savesuffix - str (default "_EdenMinima"), suffix of the
+            save name for the EDP plot.
+
+    Methods:
+        compute_loop(self) - computes the hysteresis loop and energy
+            density profiles.
+        plot_edp(self) - plots the energy density profiles.
+        plot_hl(self) - plots the hysteresis loop.
+        reset_computation(self) - resets calculated data in order to
+            do some calculation procedures repeatably with changed
+            parameters. Affects values of:
+            ehobj (see EpsminHeff.reset_computation() method), bexts,
+            m, hl_leglabel, edps, edp_peaks, edp_bounds, edp_phiemins,
+            edp_axlabels.
+        evaluate(self) - automatic processiing of the calculation and
+            plotting according to the calculation setup.
+    """
+    def __init__(self, ehobj, loopn=300, bext_max=None, plot_hyst_loop=True,
+                 plot_eden_profile=False, eden_cmap=None, disp_messages=False):
+        self.ehobj = ehobj
+        self.ehobj.plot[1] = True  # necessary for emin calculations
+        self.loopn = loopn
+        if bext_max is None:
+            self.bext_max = self.ehobj.bext
+        else:
+            self.bext_max = bext_max
+        self.bexts = np.hstack((np.linspace(-self.bext_max, self.bext_max,
+                                            self.loopn//2),
+                                np.linspace(self.bext_max, -self.bext_max,
+                                            self.loopn - self.loopn//2)))
+        self.plot_hyst_loop = plot_hyst_loop
+        self.plot_eden_profile = plot_eden_profile
+        self.edp_cmap = eden_cmap
+        self.mess = disp_messages
+        self.m = np.zeros(self.loopn)
+        # ### hysteresis loop plot params
+        self.hl_figsize = (6.5, 4)
+        self.hl_kwargs = {"ls": "-", "marker": ".", "lw": 1, "c": "tab:blue",
+                          "ms": 1.5}
+        self.hl_legend = None
+        self.hl_leglabel = r"$\xi=${}$\,$°".format(self.ehobj.xi)
+        self.hl_axlabels = [r"$\mathrm{\mu}_0H$ [mT]", r"$M/M_{\mathrm{s}}$ []"]
+        self.hl_savesuffix = "_hystloop"
+        # ### energy density profiles plot params
+        self.edp_figsize = (6.5, 4)
+        # preallocation for energy density profiles, peaks, bounds, and minima
+        if self.plot_eden_profile:
+            self.edps = np.zeros((self.loopn, self.ehobj.n))
+            self.edp_peaks, self.edp_bounds = [], np.zeros((self.loopn, 2))
+            self.edp_phiemins = np.zeros(self.loopn)
+        else:
+            self.edps, self.edp_peaks, self.edp_bounds = None, None, None
+            self.edp_phiemins = None
+        # plot: energy profiles, found peaks, calculation areas, found minima
+        self.edp_plot = [True, True, True, True]
+        self.edp_cmaptype = "sequential"
+        self.edp_legend = None
+        self.edp_leglabels = "{:.1f} mT"
+        self.edp_axlabels = [self.ehobj.angles[2]+" [°]",
+                             self.ehobj.elabels[4]+r" [kJ/m$^3$]"]
+        self.edp_savesuffix = "_EdenMinima"
+
+    def compute_loop(self):
+        """Method for computing the hysteresis loop and energy density
+        profiles.
+        """
+        for i in range(self.loopn):
+            if self.ehobj.phi_emin is None:  # compute first value of phi_emin
+                self.ehobj.compute_energy_density()
+            lastphi_emin = self.ehobj.phi_emin
+            self.ehobj.reset_computation()
+            self.ehobj.bext = self.bexts[i]
+            self.ehobj.compute_energy_density()
+            f_etot = interp1d(self.ehobj.phi, self.ehobj.eden[3], "cubic")
+
+            def f_etot_sym(phi):
+                """Symmetrical interpolation of f_etot (for each 2pi rad)."""
+                return f_etot(np.mod(phi, np.pi * 2))
+
+            # I assumed the energy density has only small amount of extrema and
+            #   is quite smooth, so to find them, small prominence is used.
+            peaks, props = find_peaks(self.ehobj.eden[3], prominence=1e-3)
+            if np.shape(peaks) == (0,):
+                # in case of empty list of peaks -> include one edge
+                elonetot = np.hstack((self.ehobj.eden[3][-2],
+                                      self.ehobj.eden[3]))
+                peaks, props = find_peaks(elonetot, prominence=1e-3)
+                peaks = peaks - 1  # get indices of non-elongated e_tot
+            printif(self.mess, f"Bext={self.bexts[i]:.05f} T, ",
+                    f"peaks: {peaks}, prominences: {props['prominences']}")
+
+            # get peaks as bounds (phi in (a; b))
+            # PHI Index Nearest to lastphi_emin
+            phiin = np.argmin(np.abs(self.ehobj.phi-lastphi_emin))
+            a, b = 0, 2*np.pi  # preallocation for a and b
+            midpeakphi = np.linspace(a, b, self.ehobj.n)
+            phi_init = midpeakphi[np.argmin(f_etot_sym(midpeakphi))]
+            if phiin in peaks and len(peaks) <= 2:
+                a, b = 0, 2*np.pi
+            elif len(peaks) == 1:  # one peak => one minimum
+                if phi_init < self.ehobj.phi[peaks[0]]:
+                    a, b = 0, self.ehobj.phi[peaks[0]]
+                else:
+                    a, b = self.ehobj.phi[peaks[0]], 2*np.pi
+            elif phiin in peaks:
+                phiinp = np.argwhere(peaks == phiin)  # get phiin index in peaks
+                a = self.ehobj.phi[peaks[phiinp - 1]]
+                b = self.ehobj.phi[peaks[(phiinp + 1) % len(peaks)]]
+            else:  # peaks have length at least 2 and phiin is not in peaks
+                if peaks[-1] - self.ehobj.n < phiin < peaks[0]:
+                    # phiin between last and first peak (phin around zero)
+                    a = self.ehobj.phi[peaks[-1]] - 2 * np.pi
+                    b = self.ehobj.phi[peaks[0]]
+                else:  # phiin between two of the peaks
+                    for j in range(len(peaks) - 1):
+                        if peaks[j] < phiin < peaks[j + 1]:
+                            a = self.ehobj.phi[peaks[j]]
+                            b = self.ehobj.phi[peaks[j + 1]]
+            fminout = fminbound(f_etot_sym, a, b, full_output=True,
+                                disp=self.mess)
+            self.ehobj.phi_emin, self.ehobj.emin = fminout[0], fminout[1]
+            printif(self.mess, "phi0", phi_init, "/ phi_emin",
+                    self.ehobj.phi_emin, "/ bounds:", a, b)
+            self.m[i] = np.cos(self.ehobj.phi_emin - self.ehobj.xi)
+            if self.plot_eden_profile:
+                self.edps[i] = self.ehobj.eden[3]
+                self.edp_peaks.append(peaks)
+                self.edp_bounds[i] = np.array((a, b))
+                self.edp_phiemins[i] = self.ehobj.phi_emin
+        printif(self.mess, "Hysteresis loop calculated.")
+
+    def plot_edp(self):
+        """Method for plotting the energy density profiles."""
+
+        def cmapi(i, cmtype=self.edp_cmaptype):
+            """Function for identifying the color from colormap."""
+            if self.edp_cmap is None:  # in case no colormap is provided
+                return "k"
+            elif cmtype == "sequential":
+                return self.edp_cmap(i/self.loopn)
+            elif cmtype == "categorical":
+                return self.edp_cmap(i % 255)
+            else:
+                raise Exception("Invalid edp_cmaptype.")
+
+        fig = plt.figure(figsize=self.edp_figsize)
+        for i in range(self.loopn):
+            if self.edp_plot[0]:  # plot energy profile
+                plt.plot(self.ehobj.phi*180/np.pi, self.edps[i]*1e-3, "-",
+                         lw=1, c=cmapi(i),
+                         label=self.edp_leglabels.format(self.bexts[i]*1e3))
+            if self.edp_plot[1]:  # plot found peaks
+                plt.plot(self.ehobj.phi[self.edp_peaks[i]]*180/np.pi,
+                         self.edps[i][self.edp_peaks[i]]*1e-3, "x", c=cmapi(i))
+            if self.edp_plot[2]:  # plot calculation area
+                f_etot = interp1d(self.ehobj.phi, self.edps[i], "cubic")
+
+                def etot_sym(phi):
+                    """Symmetrical interpolation of etot (for each 2pi rad)."""
+                    return f_etot(np.mod(phi, np.pi*2))
+
+                boundphi = np.linspace(self.edp_bounds[i][0],
+                                       self.edp_bounds[i][1], self.ehobj.n)
+                plt.plot(boundphi*180/np.pi, etot_sym(boundphi)*1e-3,
+                         "--", c=cmapi(i), lw=2)
+            if self.edp_plot[3]:  # plot energy-density minima
+                plt.plot(self.edp_phiemins[i]*180/np.pi,
+                         etot_sym(self.edp_phiemins[i])*1e-3, "o", c=cmapi(i),
+                         ms=(self.loopn-i)/4+3)
+        if self.edp_legend is not None:
+            plt.legend(loc=self.edp_legend, fontsize=4)
+        plt.xlabel(self.edp_axlabels[0])
+        plt.ylabel(self.edp_axlabels[1])
+        plt.savefig(self.ehobj.loc+self.ehobj.name+self.edp_savesuffix+".png",
+                    dpi=self.ehobj.dpi)
+        if self.ehobj.plot[7]:
+            plt.savefig(self.ehobj.loc+self.ehobj.name+self.edp_savesuffix
+                        + ".pdf")
+        plt.close(fig)
+        printif(self.mess, "Energy-density-profile plot saved.")
+
+    def plot_hl(self):
+        """Method for plotting the hysteresis loop."""
+        fig = plt.figure(figsize=self.hl_figsize)
+        plt.plot(self.bexts, self.m, label=self.hl_leglabel, **self.hl_kwargs)
+        if self.hl_legend is not None:
+            plt.legend(loc=self.hl_legend)
+        plt.xlabel(self.hl_axlabels[0])
+        plt.ylabel(self.hl_axlabels[1])
+        plt.savefig(self.ehobj.loc+self.ehobj.name+self.hl_savesuffix+".png",
+                    dpi=self.ehobj.dpi)
+        if self.ehobj.plot[7]:
+            plt.savefig(self.ehobj.loc+self.ehobj.name+self.hl_savesuffix
+                        + ".pdf")
+        plt.close(fig)
+        printif(self.mess, "Hysteresis-loop plot saved.")
+
+    def reset_computation(self):
+        """Method for resetting calculated data in order to do some
+        calculation procedures repeatably with changed parameters.
+        Affects values of:
+        ehobj (see EpsminHeff.reset_computation() method), bexts, m,
+        hl_leglabel, edps, edp_peaks, edp_bounds, edp_phiemins, edp_axlabels.
+        """
+        self.ehobj.reset_computation()
+        self.bexts = np.hstack((np.linspace(-self.bext_max, self.bext_max,
+                                            self.loopn // 2),
+                                np.linspace(self.bext_max, -self.bext_max,
+                                            self.loopn - self.loopn // 2)))
+        self.m = np.zeros(self.loopn)
+        self.hl_leglabel = r"$\xi=${}$\,$°".format(self.ehobj.xi)
+        if self.plot_eden_profile:
+            self.edps = np.zeros((self.loopn, self.ehobj.n))
+            self.edp_peaks, self.edp_bounds = [], np.zeros((self.loopn, 2))
+            self.edp_phiemins = np.zeros(self.loopn)
+        else:
+            self.edps, self.edp_peaks, self.edp_bounds = None, None, None
+            self.edp_phiemins = None
+        self.edp_axlabels = [self.ehobj.angles[2] + " [°]",
+                             self.ehobj.elabels[4] + r" [kJ/m$^3$]"]
+
+    def evaluate(self):
+        """Method for automatic processing of the calculations and
+        plotting.  Calls all methods in the right order.  The same can
+        be done manually for more versatility.
+        """
+        self.compute_loop()
+        if self.plot_eden_profile:
+            self.plot_edp()
+        if self.plot_hyst_loop:
+            self.plot_hl()
+
+
+def printif(condition, *messages, **kwargs):
+    """Function for printing messages into terminal upon condition.
+    It should support the same functionalities as standard print().
+    condition - bool, whether to print the message.
+    messages - str or (starred) list of str, text(s) to print.
+    kwargs - dict, keyword arguments for print() function.
+    """
+    if condition:
+        print(*messages, **kwargs)
 
 
 def ytilt(theta):
@@ -699,8 +1077,9 @@ def wysin_cylinder(h, r):
     cylinder with rotational axis along z drection.  For more info
     see: https://www.phys.ksu.edu/personal/wysin/notes/demag.pdf
     h - float or ndarray, [m] height of the cylinder.
-    r - float or ndarray of the same shape as h, [m] radius of the
-        cylinder's circular base.
+    r - float or ndarray, [m] radius of the
+        cylinder's circular base. If h and r are ndarrays, r and h
+        must have the same size.
     """
     nxy = 1/2/h*(np.sqrt(h**2 + r**2) - r)
     nz = 1/h*(h + r - np.sqrt(h**2 + r**2))
