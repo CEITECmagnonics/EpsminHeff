@@ -203,6 +203,8 @@ class EpsminHeff:
             in the following order:
             metadata, energy density rectilinear plot, energy density
             polar, effective field plot, effective induction plot.
+        ubrac - string, ususally one of {" ({})", " [{}]"}, format of
+            unit braces. Must include {} where to place the units.
 
     Methods:
         compute_energy_density(self, disp_mess_fmin=False)
@@ -311,6 +313,7 @@ class EpsminHeff:
         self.pe = [mpe.Stroke(linewidth=0.5, foreground='w'), mpe.Normal()]
         self.suffixes = ["_metadata", "_eden_rect", "_eden_polar", "_heff",
                          "_beff"]
+        self.ubrac = " ({})"
 
     def compute_energy_density(self, disp_mess_fmin=False):
         """Computes all energy density components and energy-density
@@ -416,10 +419,10 @@ class EpsminHeff:
         xticklabels = np.arange(0, 361, 45)
         xticks = xticklabels*np.pi/180
         ax.set_xticks(xticks, xticklabels)
-        ax.set_xlabel(self.angles[2]+" [°]")
+        ax.set_xlabel(self.angles[2]+self.ubrac.format("°"))
         yticks = ax.get_yticks()
         ax.set_yticks(yticks, np.array(yticks)*1e-3)
-        ax.set_ylabel(self.elabels[0]+" [kJ/m$^3$]")
+        ax.set_ylabel(self.elabels[0]+self.ubrac.format(r"kJ/m$^3$"))
         ax.set_ylim(ylims)  # just to make sure limits are not changed
         if self.plot[1]:  # plot angle of energy density minimum
             ax.plot(self.phi_emin * np.ones(2), ylims, "--", c=self.color[3],
@@ -519,7 +522,7 @@ class EpsminHeff:
         axl.set_yticks(rticks, rticklabels)
         axl.tick_params(right=False)
         axl.set_ylim(rlims)
-        axl.set_ylabel(self.elabels[0]+" [kJ/m$^3$]")
+        axl.set_ylabel(self.elabels[0]+self.ubrac.format(r"kJ/m$^3$"))
         ax.set_xlabel(self.angles[2])
         plt.savefig(self.loc+self.name+self.suffixes[2]+".png", dpi=self.dpi)
         if self.plot[7]:
@@ -559,8 +562,8 @@ class EpsminHeff:
                        label=self.hlabels[3])
         ax = plt.gca()
         ax.set_aspect("equal", adjustable="datalim")
-        plt.xlabel(r"$\mu_0 H_x$ [mT]")
-        plt.ylabel(r"$\mu_0 H_y$ [mT]")
+        plt.xlabel(r"$\mu_0 H_x$"+self.ubrac.format("mT"))
+        plt.ylabel(r"$\mu_0 H_y$"+self.ubrac.format("mT"))
         if self.plot[0] and self.plot[1]:
             plt.quiver(step*3.5, 0, self.h_emin[0], self.h_emin[1], color="k",
                        scale=scale, width=width, label=self.hlabels[4])
@@ -621,8 +624,8 @@ class EpsminHeff:
                        label=self.blabels[3])
         ax = plt.gca()
         ax.set_aspect("equal", adjustable="datalim")
-        plt.xlabel(r"$B_x$ [mT]")
-        plt.ylabel(r"$B_y$ [mT]")
+        plt.xlabel(r"$B_x$"+self.ubrac.format("mT"))
+        plt.ylabel(r"$B_y$"+self.ubrac.format("mT"))
         f_btotx = interp1d(self.phi, self.htot[0]+mx, "cubic")
         f_btoty = interp1d(self.phi, self.htot[1]+my, "cubic")
         if self.plot[0] and self.plot[1]:
@@ -822,7 +825,8 @@ class Hysteresis:
                           "ms": 1.5}
         self.hl_legend = None
         self.hl_leglabel = r"$\xi=${}$\,$°".format(self.ehobj.xi)
-        self.hl_axlabels = [r"$\mathrm{\mu}_0H$ [mT]", r"$M/M_{\mathrm{s}}$ []"]
+        self.hl_axlabels = [r"$\mathrm{\mu}_0H$"+self.ehobj.ubrac.format("mT"),
+                            r"$M/M_{\mathrm{s}}$"+self.ehobj.ubrac.format("")]
         self.hl_savesuffix = "_hystloop"
         # ### energy density profiles plot params
         self.edp_figsize = (6.5, 4)
@@ -839,8 +843,9 @@ class Hysteresis:
         self.edp_cmaptype = "sequential"
         self.edp_legend = None
         self.edp_leglabels = "{:.1f} mT"
-        self.edp_axlabels = [self.ehobj.angles[2]+" [°]",
-                             self.ehobj.elabels[4]+r" [kJ/m$^3$]"]
+        self.edp_axlabels = [self.ehobj.angles[2]+self.ehobj.ubrac.format("°"),
+                             self.ehobj.elabels[4]
+                             + self.ehobj.ubrac.format(r"kJ/m$^3$")]
         self.edp_savesuffix = "_EdenMinima"
 
     def compute_loop(self):
@@ -918,14 +923,14 @@ class Hysteresis:
     def plot_edp(self):
         """Method for plotting the energy density profiles."""
 
-        def cmapi(i, cmtype=self.edp_cmaptype):
+        def cmapi(ii, cmtype=self.edp_cmaptype):
             """Function for identifying the color from colormap."""
             if self.edp_cmap is None:  # in case no colormap is provided
                 return "k"
             elif cmtype == "sequential":
-                return self.edp_cmap(i/self.loopn)
+                return self.edp_cmap(ii/self.loopn)
             elif cmtype == "categorical":
-                return self.edp_cmap(i % 255)
+                return self.edp_cmap(ii % 255)
             else:
                 raise Exception("Invalid edp_cmaptype.")
 
@@ -987,7 +992,8 @@ class Hysteresis:
         calculation procedures repeatably with changed parameters.
         Affects values of:
         ehobj (see EpsminHeff.reset_computation() method), bexts, m,
-        hl_leglabel, edps, edp_peaks, edp_bounds, edp_phiemins, edp_axlabels.
+        hl_leglabel, hl_axabels, edps, edp_peaks, edp_bounds,
+        edp_phiemins, edp_axlabels.
         """
         self.ehobj.reset_computation()
         self.bexts = np.hstack((np.linspace(-self.bext_max, self.bext_max,
@@ -996,6 +1002,8 @@ class Hysteresis:
                                             self.loopn - self.loopn // 2)))
         self.m = np.zeros(self.loopn)
         self.hl_leglabel = r"$\xi=${}$\,$°".format(self.ehobj.xi)
+        self.hl_axlabels = [r"$\mathrm{\mu}_0H$"+self.ehobj.ubrac.format("mT"),
+                            r"$M/M_{\mathrm{s}}$" + self.ehobj.ubrac.format("")]
         if self.plot_eden_profile:
             self.edps = np.zeros((self.loopn, self.ehobj.n))
             self.edp_peaks, self.edp_bounds = [], np.zeros((self.loopn, 2))
@@ -1003,8 +1011,9 @@ class Hysteresis:
         else:
             self.edps, self.edp_peaks, self.edp_bounds = None, None, None
             self.edp_phiemins = None
-        self.edp_axlabels = [self.ehobj.angles[2] + " [°]",
-                             self.ehobj.elabels[4] + r" [kJ/m$^3$]"]
+        self.edp_axlabels = [self.ehobj.angles[2]+self.ehobj.ubrac.format("°"),
+                             self.ehobj.elabels[4]
+                             + self.ehobj.ubrac.format(r"kJ/m$^3$")]
 
     def evaluate(self):
         """Method for automatic processing of the calculations and
