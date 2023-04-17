@@ -518,7 +518,7 @@ class EpsminHeff:
         else:
             hei = 0.55
         axl = fig.add_axes([box.xmax+box.xmin/2, hei*(box.ymin+box.ymax),
-                            box.width/30, box.height*0.5])
+                            box.width/30, box.height*0.43])
         axl.spines['top'].set_visible(False)
         axl.spines['right'].set_visible(False)
         axl.spines['bottom'].set_visible(False)
