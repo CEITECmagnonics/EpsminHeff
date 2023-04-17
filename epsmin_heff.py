@@ -205,6 +205,10 @@ class EpsminHeff:
             polar, effective field plot, effective induction plot.
         ubrac - string, ususally one of {" ({})", " [{}]"}, format of
             unit braces. Must include {} where to place the units.
+        hxlimshift - 2-list of float, [mT] shift of x limits in the
+            heff plot.
+        bxlimshift - 2-list of float, [mT] shift of x limits in the
+            beff plot.
 
     Methods:
         compute_energy_density(self, disp_mess_fmin=False)
@@ -314,6 +318,8 @@ class EpsminHeff:
         self.suffixes = ["_metadata", "_eden_rect", "_eden_polar", "_heff",
                          "_beff"]
         self.ubrac = " ({})"
+        self.hxlimshift = [0, 0]
+        self.bxlimshift = [0, 0]
 
     def compute_energy_density(self, disp_mess_fmin=False):
         """Computes all energy density components and energy-density
@@ -538,26 +544,31 @@ class EpsminHeff:
         """
         cu = 1e3  # convert units (e.g. T -> mT for labelling)
         # should be multiplied by the number of possible elements to fit (4)
-        scale = np.max(np.sqrt(np.sum(self.htot**2, 0)))*4
+        scale = (np.max(np.sqrt(np.sum(self.htot**2, 0)))*(sum(self.use)+1)
+                 + (self.hxlimshift[1]-self.hxlimshift[0])/cu)
         fig = plt.figure(figsize=self.figs_size[2], constrained_layout=True)
-        xlims = (0, scale*cu)
+        xlims = (0+self.hxlimshift[0], scale*cu+self.hxlimshift[0])
         plt.xlim(xlims)
-        zer, step, width = np.zeros(self.n), xlims[1]/(len(self.use)+1), 0.003
+        zer, width, pose = np.zeros(self.n), 0.003, 0.5
+        step = (xlims[1]-self.hxlimshift[1])/(sum(self.use)+1)
         if self.use[0]:  # plot vectors of dipolar field
-            plt.quiver(zer+step*0.5, zer, self.hdip[0], self.hdip[1],
+            plt.quiver(zer+step*pose, zer, self.hdip[0], self.hdip[1],
                        color=self.colors[0], scale=scale, width=width,
                        label=self.hlabels[0])
+            pose += 1
         if self.use[1]:  # plot vectors of anisotropy field
-            plt.quiver(zer+step*1.5, zer, self.hani[0], self.hani[1],
+            plt.quiver(zer+step*pose, zer, self.hani[0], self.hani[1],
                        color=self.colors[1], scale=scale, width=width,
                        label=self.hlabels[1])
+            pose += 1
         if self.use[2]:  # plot vector(s) of external field
-            plt.quiver(zer + step * 2.5, zer, zer + self.bext * np.cos(self.xi),
-                       zer + self.bext * np.sin(self.xi),
+            plt.quiver(zer+step*pose, zer, zer+self.bext*np.cos(self.xi),
+                       zer+self.bext*np.sin(self.xi),
                        color=self.color[2], scale=scale, width=width,
                        label=self.hlabels[2])
+            pose += 1
         if self.plot[0]:  # plot vectors of total effective field
-            plt.quiver(zer+step*3.5, zer, self.htot[0], self.htot[1],
+            plt.quiver(zer+step*pose, zer, self.htot[0], self.htot[1],
                        color=self.colors[3], scale=scale, width=width,
                        label=self.hlabels[3])
         ax = plt.gca()
@@ -565,7 +576,7 @@ class EpsminHeff:
         plt.xlabel(r"$\mu_0 H_x$"+self.ubrac.format("mT"))
         plt.ylabel(r"$\mu_0 H_y$"+self.ubrac.format("mT"))
         if self.plot[0] and self.plot[1]:
-            plt.quiver(step*3.5, 0, self.h_emin[0], self.h_emin[1], color="k",
+            plt.quiver(step*pose, 0, self.h_emin[0], self.h_emin[1], color="k",
                        scale=scale, width=width, label=self.hlabels[4])
             plt.text(0.6, 0.9, self.hlabels[4] + r"$= {:.3f}\,$mT"
                      .format(np.sqrt(self.h_emin[0]**2+self.h_emin[1]**2)*1e3),
@@ -598,28 +609,33 @@ class EpsminHeff:
         mx, my = MU0*self.msat*np.cos(self.phi), MU0*self.msat*np.sin(self.phi)
         cu = 1e3  # convert units (e.g. T -> mT for labelling)
         # should be multiplied by the number of possible elements to fit (4)
-        scale = np.max(np.sqrt(np.sum((self.htot
-                                       + np.vstack((mx, my)))**2, 0)))*4
+        scale = (np.max(np.sqrt(np.sum((self.htot
+                                        + np.vstack((mx, my)))**2, 0)))
+                 * (sum(self.use)+1)
+                 + (self.bxlimshift[1]-self.bxlimshift[0])/cu)
         fig = plt.figure(figsize=self.figs_size[3], constrained_layout=True)
-        xlims = (0, scale*cu)
+        xlims = (0+self.bxlimshift[0], scale*cu+self.bxlimshift[0])
         plt.xlim(xlims)
-        zer, step, width = np.zeros(self.n), xlims[1]/(len(self.use)+1), 0.003
+        zer, width, pose = np.zeros(self.n), 0.003, 0.5
+        step = (xlims[1]-self.bxlimshift[1])/(sum(self.use)+1)
         if self.use[0]:  # plot vectors of dipolar field
-            plt.quiver(zer+step*0.5, zer, self.hdip[0]+mx, self.hdip[1]+my,
+            plt.quiver(zer+step*pose, zer, self.hdip[0]+mx, self.hdip[1]+my,
                        color=self.colors[0], scale=scale, width=width,
                        label=self.blabels[0])
+            pose += 1
         if self.use[1]:  # plot vectors of anisotropy field
-            plt.quiver(zer+step*1.5, zer, self.hani[0]+mx, self.hani[1]+my,
+            plt.quiver(zer+step*pose, zer, self.hani[0]+mx, self.hani[1]+my,
                        color=self.colors[1], scale=scale, width=width,
                        label=self.blabels[1])
+            pose += 1
         if self.use[2]:  # plot vector(s) of external field
-            plt.quiver(zer + step * 2.5, zer,
-                       zer + self.bext * np.cos(self.xi) + mx,
-                       zer + self.bext * np.sin(self.xi) + my,
+            plt.quiver(zer+step*pose, zer, zer+self.bext*np.cos(self.xi)+mx,
+                       zer+self.bext*np.sin(self.xi)+my,
                        color=self.colors[2], scale=scale, width=width,
                        label=self.blabels[2])
+            pose += 1
         if self.plot[0]:  # plot vectors of total effective field
-            plt.quiver(zer+step*3.5, zer, self.htot[0]+mx, self.htot[1]+my,
+            plt.quiver(zer+step*pose, zer, self.htot[0]+mx, self.htot[1]+my,
                        color=self.colors[3], scale=scale, width=width,
                        label=self.blabels[3])
         ax = plt.gca()
@@ -629,7 +645,7 @@ class EpsminHeff:
         f_btotx = interp1d(self.phi, self.htot[0]+mx, "cubic")
         f_btoty = interp1d(self.phi, self.htot[1]+my, "cubic")
         if self.plot[0] and self.plot[1]:
-            plt.quiver(step*3.5, 0, f_btotx(self.phi_emin),
+            plt.quiver(step*pose, 0, f_btotx(self.phi_emin),
                        f_btoty(self.phi_emin), color="k",
                        scale=scale, width=width, label=self.hlabels[4])
             plt.text(0.6, 0.9, self.hlabels[4] + r"$= {:.3f}\,$mT"
