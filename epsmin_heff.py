@@ -524,7 +524,7 @@ class EpsminHeff:
         axl = fig.add_axes([box.xmax+box.xmin/2+self.polcorr[0],
                             hei*(box.ymin+box.ymax)+self.polcorr[1],
                             box.width/30+self.polcorr[2],
-                            box.height*0.5+self.polcorr[3]])
+                            box.height*0.43+self.polcorr[3]])
         axl.spines['top'].set_visible(False)
         axl.spines['right'].set_visible(False)
         axl.spines['bottom'].set_visible(False)
