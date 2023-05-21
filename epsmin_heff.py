@@ -415,6 +415,13 @@ class EpsminHeff:
         epsilon on magnetization direction angle phi in rectilinear
         projection.
         """
+        def haf(angle):
+            """Function for deciding the horizontal alignment of text."""
+            if angle < 260*np.pi/180:
+                return "left"
+            else:
+                return "right"
+        
         fig, ax = plt.subplots(1, 1, figsize=self.figs_size[0],
                                constrained_layout=True)
         for i, j in enumerate(self.use):
@@ -439,21 +446,22 @@ class EpsminHeff:
                     lw=1)
             ax.text(self.phi_emin, ylims[0] + np.diff(ylims)*0.1,
                     self.angles[3] + r"$=${:.2f}°"
-                    .format(self.phi_emin*180/np.pi), path_effects=self.pe)
+                    .format(self.phi_emin*180/np.pi), path_effects=self.pe,
+                    ha=haf(self.phi_emin))
         if self.plot[2] and self.use[1]:  # plot angle of uni. anisotropy axis
             ax.plot(self.delta * np.ones(2), ylims, "--", c=self.color[1],
                     lw=1)
             ax.text(self.delta, ylims[0] + np.diff(ylims)*0.1
                     * np.sum([1, self.plot[1]]), self.angles[0]
                     + r"$=${:.2f}°".format(self.delta*180/np.pi),
-                    path_effects=self.pe)
+                    path_effects=self.pe, ha=haf(self.delta))
         if self.plot[2] and self.use[2]:  # plot angle of external field
             ax.plot(self.xi * np.ones(2), ylims, "--", c=self.color[2],
                     lw=1)
             ax.text(self.xi, ylims[0] + np.diff(ylims)*0.1
                     * np.sum([1, self.use[1], self.plot[1]]), self.angles[1]
                     + r"$=${:.2f}°".format(self.xi * 180 / np.pi),
-                    path_effects=self.pe)
+                    path_effects=self.pe, ha=haf(self.xi))
         if self.title is not None:  # add suptitle to the figure
             fig.suptitle(self.title)
         ax.grid()
