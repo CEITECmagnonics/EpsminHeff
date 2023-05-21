@@ -205,6 +205,9 @@ class EpsminHeff:
             polar, effective field plot, effective induction plot.
         ubrac - string, ususally one of {" ({})", " [{}]"}, format of
             unit braces. Must include {} where to place the units.
+        polcorr - 4-list of float, [1] correction of position of the
+            polar plot radial floating axis as fractions of figure
+            width and height as [left, bottom, width, height].
         hxlimshift - 2-list of float, [mT] shift of x limits in the
             heff plot.
         bxlimshift - 2-list of float, [mT] shift of x limits in the
@@ -318,6 +321,7 @@ class EpsminHeff:
         self.suffixes = ["_metadata", "_eden_rect", "_eden_polar", "_heff",
                          "_beff"]
         self.ubrac = " ({})"
+        self.polcorr = [0, 0, 0, 0]
         self.hxlimshift = [0, 0]
         self.bxlimshift = [0, 0]
 
@@ -517,8 +521,10 @@ class EpsminHeff:
             hei = 0.5
         else:
             hei = 0.55
-        axl = fig.add_axes([box.xmax+box.xmin/2, hei*(box.ymin+box.ymax),
-                            box.width/30, box.height*0.43])
+        axl = fig.add_axes([box.xmax+box.xmin/2+self.polcorr[0],
+                            hei*(box.ymin+box.ymax)+self.polcorr[1],
+                            box.width/30+self.polcorr[2],
+                            box.height*0.5+self.polcorr[3]])
         axl.spines['top'].set_visible(False)
         axl.spines['right'].set_visible(False)
         axl.spines['bottom'].set_visible(False)
